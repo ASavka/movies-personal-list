@@ -1,5 +1,6 @@
 const http = require('http');
 const config = require('./config');
+const logger = require('./logger');
 const PORT = config.APP_PORT;
 const ENV = config.ENV;
 
@@ -10,5 +11,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Server is listening on port ${PORT}. Env is ${ENV}`);
+  logger.info(`Server is listening on port ${PORT}. Env is ${ENV}`);
 });
