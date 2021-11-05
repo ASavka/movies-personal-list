@@ -11,23 +11,23 @@ Users should enter a title for the movie or series and app by using external API
 Add APP_PORT=[8888] at the beginning or use other ways to set to set environment variable.
 Default: APP_PORT=[8787]
 
-Add --app_env [staging] at the end to set env via cli
-Default: --app_env test
+Add -- --app_env=[staging] at the end to set env via npm cli
+Default: -- --app_env=test
 
 - Run with custom port and env:
 
-  `APP_PORT=8888 node app.js --app_env staging`
+  `APP_PORT=8888 npm run dev -- --app_env=staging`
 
-  > Server is listening on port 8888. Env is staging
+  > Server is running here 👉 http://localhost:8888. Env is staging
 
 - Run with default port and custom env:
 
-  `node app.js --app_env staging`
+  `npm run dev -- --app_env=staging`
 
-  > Server is listening on port 8787. Env is staging
+  > Server is running here 👉 http://localhost:8787. Env is staging
 
 - Run with default port and env:
 
-  `node app.js`
+  `npm run dev`
 
-  > Server is listening on port 8787. Env is test
+  > Server is running here 👉 http://localhost:8787. Env is test
