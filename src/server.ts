@@ -14,7 +14,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 app.get('/', (req: Request, res: Response): void => {
   res.send('I am empty page');
