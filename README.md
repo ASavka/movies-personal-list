@@ -31,3 +31,9 @@ Default: -- --app_env=test
   `npm run dev`
 
   > Server is running here 👉 http://localhost:8787. Env is test
+
+- Run Pure http server written without Express:
+
+  `npm run pure`
+
+  > Pure http Server is running here 👉 http://localhost:8787. Env is test
