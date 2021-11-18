@@ -1,0 +1,36 @@
+{
+  "name": "movies-personal-list",
+  "version": "1.0.0",
+  "description": "Application for creating your own lists of movies and series (with ratings, favorite lists and so on), based on using a third party service http://www.omdbapi.com.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "ts-node-dev --respawn ./src/server.ts",
+    "pure": "ts-node-dev --respawn ./src/server-pure.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ASavka/movies-personal-list.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ASavka/movies-personal-list/issues"
+  },
+  "homepage": "https://github.com/ASavka/movies-personal-list#readme",
+  "devDependencies": {
+    "@types/express": "^4.17.13",
+    "@types/minimist": "^1.2.2",
+    "@types/node": "^16.11.6",
+    "express": "^4.17.1",
+    "ts-node": "^10.4.0",
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^4.4.4"
+  },
+  "dependencies": {
+    "@types/uuid": "^8.3.1",
+    "uuid": "^8.3.2",
+    "winston": "^3.3.3"
+  }
+}
