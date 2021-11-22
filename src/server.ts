@@ -5,7 +5,7 @@ import { v4 as uuid } from 'uuid';
 import axios from 'axios';
 import * as _ from 'underscore';
 
-const url = 'http://www.omdbapi.com?apikey=16d8c738&t=';
+const OMDB_BASE_URL = 'http://www.omdbapi.com?apikey=16d8c738&t=';
 const app: Application = express();
 const PORT = config.APP_PORT;
 const ENV = config.ENV;
@@ -37,10 +37,6 @@ const errorHandler = (
   next();
 };
 
-const verifyMoviePresent = (id: string) => {
-  return movies.find((m) => m.id === id);
-};
-
 app.use(express.json({ limit: '50mb' }));
 
 interface Movie {
@@ -51,7 +47,7 @@ interface Movie {
 
 app.post('/movies', requestLogger, (req: Request, res: Response): void => {
   const movie: Movie = req.body;
-  axios.get(`${url}${movie.name}`).then((response) => {
+  axios.get(`${OMDB_BASE_URL}${movie.name}`).then((response) => {
     let newMovie;
 
     if (response.data.Error === 'Movie not found!') {
