@@ -4,7 +4,16 @@ import logger from './logger';
 import { v4 as uuid } from 'uuid';
 import axios from 'axios';
 import * as _ from 'underscore';
+import { encrypt, decrypt } from './crypt';
 
+const db = [
+  {
+    name: 'Anton',
+    pass: '1234',
+    role: 'admin',
+    favMovies: ['avatar'],
+  },
+];
 const OMDB_BASE_URL = 'http://www.omdbapi.com?apikey=16d8c738&t=';
 const app: Application = express();
 const PORT = config.APP_PORT;
@@ -37,7 +46,44 @@ const errorHandler = (
   next();
 };
 
+interface IUser {
+  name: string;
+  pass: string;
+  role: string;
+  favMovies: string[];
+}
+
+declare global {
+  namespace Express {
+    interface Request {
+      user: IUser;
+    }
+  }
+}
+
 app.use(express.json({ limit: '50mb' }));
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    next();
+    return;
+  }
+
+  try {
+    const token = authHeader.split(' ')[1];
+    const tokenData = decrypt(token);
+    const user = db.find((user) => user.name === tokenData.payload.name);
+    if (user) {
+      req.user = user;
+    }
+  } catch (err) {
+    logger.error(err);
+  } finally {
+    next();
+  }
+});
 
 interface Movie {
   name: string;
@@ -69,8 +115,8 @@ app.post('/movies', requestLogger, (req: Request, res: Response): void => {
 
 app.get('/movies', requestLogger, (req: Request, res: Response) => {
   const sortProperty = req.query.sortBy;
-  let perPage = (req.query as any).perPage;
-  let pageNumber = (req.query as any).pageNumber;
+  const perPage = (req.query as any).perPage;
+  const pageNumber = (req.query as any).pageNumber;
   let sortedMovies = movies;
   if (sortProperty) {
     sortedMovies = _.sortBy(sortedMovies, sortProperty);
@@ -79,8 +125,14 @@ app.get('/movies', requestLogger, (req: Request, res: Response) => {
     sortedMovies = _.chunk(sortedMovies, parseInt(perPage));
     sortedMovies = sortedMovies[parseInt(pageNumber)];
   }
-
-  res.send(sortedMovies);
+  if (req.user) {
+    res.json({
+      favMovies: req.user.favMovies,
+      movies: sortedMovies,
+    });
+  } else {
+    res.json({ movies: sortedMovies });
+  }
 });
 
 app.get(`/movies/:id`, requestLogger, (req: Request, res: Response) => {
@@ -95,7 +147,7 @@ app.get(`/movies/:id`, requestLogger, (req: Request, res: Response) => {
 });
 
 app.patch(
-  `/movies/:id`,
+  '/movies/:id',
   requestLogger,
   (req: Request, res: Response, next: NextFunction) => {
     let newData: Omit<Movie, 'name'> = req.body;
@@ -120,19 +172,82 @@ app.patch(
   }
 );
 
-app.delete(`/movies/:id`, requestLogger, (req: Request, res: Response) => {
+app.delete('/movies/:id', requestLogger, (req: Request, res: Response) => {
   const id = req.params.id;
   if (movies.find((m) => m.id === id)) {
     movies = movies.filter((m) => m.id !== id);
 
     res.send(`movie with id ${id} deleted`);
   } else {
-    res.statusCode = 404;
-    res.send('Invalid movie ID.');
+    res.status(404).json({ error: 'Invalid movie ID.' });
   }
 });
 
 app.use(errorHandler);
+
+const authRouter = express.Router();
+
+authRouter.post('/registration', (req: Request, res: Response) => {
+  const { name, pass } = req.body;
+  const user = db.find((user) => user.name === name);
+  if (user) {
+    res.status(409).json({ error: `User with name ${name} exists` });
+  } else {
+    db.push({
+      name: name,
+      pass: pass,
+      role: 'user',
+      favMovies: [],
+    });
+
+    res.status(201).json({ message: `User ${name} registered` });
+  }
+});
+
+authRouter.post('/login', (req: Request, res: Response) => {
+  const { name, pass } = req.body;
+  const user = db.find((user) => user.name === name && user.pass == pass);
+  if (!user) {
+    res.status(404).json({ error: 'User or password not found' }).end();
+  } else {
+    const token = encrypt({ name: user.name, role: user.role });
+    res.status(201).json({ token: token }).end();
+  }
+});
+
+const authOnly = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+  next();
+};
+
+app.get('/users/:name', authOnly, (req: Request, res: Response) => {
+  if (req.params.name === req.user.name || req.user.role === 'admin') {
+    const user = db.find((user) => user.name === req.params.name);
+    if (user) {
+      res.status(201).json({ user });
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  } else {
+    res.status(403).json({ error: 'Forbidden' });
+  }
+});
+
+app.patch('/users/:name', authOnly, (req: Request, res: Response) => {
+  const myMovies = req.body.favMovies;
+  if (req.params.name === req.user.name) {
+    const i = db.findIndex((user) => user.name === req.params.name);
+    db[i].favMovies = myMovies;
+    res.status(201).json(db[i]);
+  } else {
+    res.status(403).json({ error: 'Forbidden' });
+  }
+});
+
+app.use('/auth', authRouter);
 
 app.listen(PORT, (): void => {
   logger.info(
