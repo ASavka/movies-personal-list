@@ -5,11 +5,12 @@ import { v4 as uuid } from 'uuid';
 import axios from 'axios';
 import * as _ from 'underscore';
 import { encrypt, decrypt } from './crypt';
+import argon2 from 'argon2';
 
 const db = [
   {
     name: 'Anton',
-    pass: '1234',
+    pass: '$argon2i$v=19$m=16,t=2,p=1$UjRvb2RaekdERVFxU3pqRA$8a9b8uwCaTtk3cqYdMtwsQ',
     role: 'admin',
     favMovies: ['avatar'],
   },
@@ -187,8 +188,10 @@ app.use(errorHandler);
 
 const authRouter = express.Router();
 
-authRouter.post('/registration', (req: Request, res: Response) => {
-  const { name, pass } = req.body;
+authRouter.post('/registration', async (req: Request, res: Response) => {
+  req.body.pass = await argon2.hash(req.body.pass);
+  const { name, pass, role } = req.body;
+
   const user = db.find((user) => user.name === name);
   if (user) {
     res.status(409).json({ error: `User with name ${name} exists` });
@@ -196,7 +199,7 @@ authRouter.post('/registration', (req: Request, res: Response) => {
     db.push({
       name: name,
       pass: pass,
-      role: 'user',
+      role: role || 'user',
       favMovies: [],
     });
 
@@ -204,10 +207,10 @@ authRouter.post('/registration', (req: Request, res: Response) => {
   }
 });
 
-authRouter.post('/login', (req: Request, res: Response) => {
+authRouter.post('/login', async (req: Request, res: Response) => {
   const { name, pass } = req.body;
-  const user = db.find((user) => user.name === name && user.pass == pass);
-  if (!user) {
+  const user = db.find((user) => user.name === name);
+  if (!user || !(await argon2.verify(user.pass, pass))) {
     res.status(404).json({ error: 'User or password not found' }).end();
   } else {
     const token = encrypt({ name: user.name, role: user.role });
