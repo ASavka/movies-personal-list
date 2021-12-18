@@ -8,6 +8,20 @@ Users should enter a title for the movie or series and app by using external API
 
 # How To
 
+### DB
+
+- Install PostgreSQL
+
+- To cretae DB:
+  `npm run dbCreate`
+
+  or
+
+- To drop DB:
+  `npm run dbDrop`
+
+### App
+
 Add APP_PORT=[8888] at the beginning or use other ways to set to set environment variable.
 Default: APP_PORT=[8787]
 
