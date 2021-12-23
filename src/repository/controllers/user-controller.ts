@@ -9,33 +9,30 @@ class UsersController {
     if (!req.body.role) {
       req.body.role = 'user';
     }
-    userService
-      .create(req.body)
-      .then((user) => res.status(201).json(user))
-      .catch((err) =>
-        res
-          .status(409)
-          .json({ error: `User with name ${req.body.name} exists` })
-      );
+    try {
+      const user = await userService.create(req.body);
+      res.status(201).json(user);
+    } catch (error) {
+      res.status(409).json({ error: `User with name ${req.body.name} exists` });
+    }
   }
 
   async login(req: Request, res: Response) {
     const { name, pass } = req.body;
-    userService
-      .getByName(name)
-      .then((user) =>
-        argon2.verify(user.pass, pass).then((matched) => {
-          if (!matched) {
-            res.status(404).json({ error: 'User or password not found' });
-          } else {
-            const token = encrypt({ name: user.name, role: user.role });
-            res.status(201).json({ token: token });
-          }
-        })
-      )
-      .catch((err) =>
-        res.status(404).json({ error: 'User or password not found' })
-      );
+    let user;
+    let matched;
+    try {
+      user = await userService.getByName(name);
+      matched = await argon2.verify(user.pass, pass);
+    } catch (err) {
+      res.status(404).json({ error: err });
+    }
+    if (matched && user) {
+      const token = encrypt({ name: user.name, role: user.role });
+      res.status(201).json({ token: token });
+    } else {
+      res.status(404).json({ error: 'User or password not found' });
+    }
   }
 
   async getUserByName(req: Request, res: Response) {
